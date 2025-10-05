@@ -18,24 +18,75 @@ const ResumeMatcher = () => {
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [jobCreated, setJobCreated] = useState(false);
   const [matchResult, setMatchResult] = useState(null);
+  const [resumeData, setResumeData] = useState(null);
+  const [jobData, setJobData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleUploadSuccess = (response) => {
+    console.log('✅ Resume uploaded:', response);
+    setResumeData(response);
     setResumeUploaded(true);
     setCurrentStep(2);
   };
 
-  const handleJobCreated = (response) => {
+  const handleJobCreated = async (response) => {
+    console.log('✅ Job created:', response);
+    setJobData(response);
     setJobCreated(true);
     setCurrentStep(3);
-    // Mock match result for demonstration
-    // In real app, this would come from the API
-    setMatchResult({
-      resume: { filename: 'john_doe_resume.pdf' },
-      job: { title: 'Senior Frontend Developer' },
-      matchScore: 85,
-      matchedSkills: ['React', 'JavaScript', 'CSS', 'HTML', 'Git'],
-      missingSkills: ['TypeScript', 'Node.js', 'AWS']
-    });
+    
+    // Now perform the actual matching
+    if (resumeData && response) {
+      await performMatching(resumeData, response);
+    }
+  };
+  
+  const performMatching = async (resume, job) => {
+    setLoading(true);
+    try {
+      console.log('🔄 Starting match analysis...');
+      
+      // Call the actual matching API endpoint
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/jobs/${job.id}/match`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          resumeId: resume.id
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to perform matching');
+      }
+      
+      const matchData = await response.json();
+      console.log('✅ Match result:', matchData);
+      
+      setMatchResult({
+        resume: resume,
+        job: job,
+        matchScore: matchData.matchScore || 0,
+        matchedSkills: matchData.matchedSkills || [],
+        missingSkills: matchData.missingSkills || []
+      });
+      
+    } catch (error) {
+      console.error('❌ Matching failed:', error);
+      // Fallback to demo data if API fails
+      setMatchResult({
+        resume: resume,
+        job: job,
+        matchScore: 75,
+        matchedSkills: ['JavaScript', 'React', 'CSS', 'HTML'],
+        missingSkills: ['TypeScript', 'Node.js'],
+        error: 'Using demo data - API matching temporarily unavailable'
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const containerVariants = {
@@ -315,13 +366,37 @@ const ResumeMatcher = () => {
                 </p>
               </div>
 
-              {currentStep === 3 && matchResult && (
+              {/* Loading State */}
+              {currentStep === 3 && loading && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="border border-purple-500/30 rounded-xl p-8 text-center"
+                >
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-500/10 rounded-full mb-4 animate-pulse">
+                    <FiZap className="text-3xl text-purple-400 animate-pulse" />
+                  </div>
+                  <h4 className="text-lg font-semibold mb-2 text-white">Analyzing Match...</h4>
+                  <p className="text-gray-400 text-sm">Our AI is comparing your resume with the job requirements</p>
+                  <div className="mt-4 flex justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-purple-400 border-t-transparent"></div>
+                  </div>
+                </motion.div>
+              )}
+              
+              {/* Results */}
+              {currentStep === 3 && matchResult && !loading && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="border border-purple-500/30 rounded-xl"
                 >
                   <MatchResultCard match={matchResult} />
+                  {matchResult.error && (
+                    <div className="mt-4 p-3 bg-orange-500/20 border border-orange-500/30 rounded-lg text-orange-300 text-sm">
+                      <p>{matchResult.error}</p>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
