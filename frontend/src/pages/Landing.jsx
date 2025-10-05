@@ -7,7 +7,7 @@ import {
   FiZap, 
   FiCheckCircle, 
   FiTrendingUp, 
-  FiBrain,
+  FiCpu,
   FiStar,
   FiArrowRight
 } from 'react-icons/fi';
@@ -17,7 +17,7 @@ const Landing = () => {
 
   const features = [
     {
-      icon: <FiBrain className="text-4xl" />,
+      icon: <FiCpu className="text-4xl" />,
       title: 'AI-Powered Analysis',
       description: 'Advanced algorithms analyze your resume against job requirements with precision and intelligence.'
     },
