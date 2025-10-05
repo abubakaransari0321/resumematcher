@@ -9,6 +9,7 @@ import Upload from './pages/Upload';
 import Jobs from './pages/Jobs';
 import Results from './pages/Results';
 import ResumeMatcher from './pages/ResumeMatcher';
+import Test from './pages/Test';
 
 function App() {
   return (
@@ -45,11 +46,11 @@ function App() {
             />
             <Route
               path="/results"
-              element={
-                <ProtectedRoute>
-                  <Results />
-                </ProtectedRoute>
-              }
+              element={<Results />}
+            />
+            <Route
+              path="/test"
+              element={<Test />}
             />
           </Routes>
         </Layout>

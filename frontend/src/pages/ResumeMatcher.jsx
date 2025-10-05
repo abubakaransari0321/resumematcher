@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   FiUploadCloud, 
@@ -14,6 +15,7 @@ import JobDescriptionCard from '../components/JobDescriptionCard';
 import MatchResultCard from '../components/MatchResultCard';
 
 const ResumeMatcher = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [jobCreated, setJobCreated] = useState(false);
@@ -354,7 +356,10 @@ const ResumeMatcher = () => {
                     
                     {/* View Results Button */}
                     <button
-                      onClick={() => window.location.href = '/results'}
+                      onClick={() => {
+                        console.log('Navigating to results page...');
+                        navigate('/results');
+                      }}
                       className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
                     >
                       <FiZap className="text-lg" />
