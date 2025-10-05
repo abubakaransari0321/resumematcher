@@ -10,7 +10,7 @@ import {
   FiArrowRight,
   FiStar
 } from 'react-icons/fi';
-import UploadCard from '../components/UploadCard';
+// Removed UploadCard import - now using inline upload interface
 import JobDescriptionCard from '../components/JobDescriptionCard';
 import MatchResultCard from '../components/MatchResultCard';
 
@@ -23,12 +23,55 @@ const ResumeMatcher = () => {
   const [resumeData, setResumeData] = useState(null);
   const [jobData, setJobData] = useState(null);
   const [loading, setLoading] = useState(false);
+  
+  // Upload state
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
-  const handleUploadSuccess = (response) => {
-    console.log('✅ Resume uploaded:', response);
-    setResumeData(response);
-    setResumeUploaded(true);
-    setCurrentStep(2);
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    
+    if (!validTypes.includes(file.type)) {
+      setUploadError('Please upload a PDF or DOCX file');
+      return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError('File size must be less than 10MB');
+      return;
+    }
+    
+    setSelectedFile(file);
+    setUploadError('');
+  };
+  
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+    
+    setUploading(true);
+    setUploadError('');
+    
+    try {
+      const { resumeService } = await import('../api/resumeService');
+      const response = await resumeService.uploadResume(selectedFile);
+      console.log('✅ Resume uploaded:', response);
+      setResumeData(response);
+      setResumeUploaded(true);
+      setCurrentStep(2);
+    } catch (error) {
+      console.error('❌ Upload failed:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error?.message || 
+                          error.message || 
+                          'Upload failed. Please try again.';
+      setUploadError(`Upload failed: ${errorMessage}`);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleJobCreated = async (response) => {
@@ -213,8 +256,53 @@ const ResumeMatcher = () => {
 
               <div className="flex-grow flex flex-col justify-center">
                 {currentStep === 1 && !resumeUploaded && (
-                  <div className="border-2 border-dashed border-purple-500/30 rounded-xl p-4">
-                    <UploadCard onUploadSuccess={handleUploadSuccess} />
+                  <div className="text-center">
+                    {!selectedFile ? (
+                      <>
+                        <FiUploadCloud className="text-4xl text-purple-400 mx-auto mb-4" />
+                        <input
+                          type="file"
+                          accept=".pdf,.docx"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          id="resume-upload"
+                        />
+                        <label
+                          htmlFor="resume-upload"
+                          className="inline-block bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer transition-all duration-300 transform hover:scale-105"
+                        >
+                          Browse Files
+                        </label>
+                        <p className="text-xs text-gray-500 mt-3">
+                          Max 10MB • PDF, DOCX
+                        </p>
+                      </>
+                    ) : (
+                      <div className="bg-slate-800/60 border border-purple-500/30 rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-center space-x-3 mb-3">
+                          <FiFileText className="text-2xl text-purple-400" />
+                          <div className="text-left">
+                            <p className="font-medium text-white text-sm truncate max-w-[160px]">{selectedFile.name}</p>
+                            <p className="text-xs text-gray-400">
+                              {(selectedFile.size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleUpload}
+                          disabled={uploading}
+                          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        >
+                          {uploading ? 'Uploading...' : 'Upload Resume'}
+                        </button>
+                      </div>
+                    )}
+                    
+                    {uploadError && (
+                      <div className="mt-3 p-2 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-xs">
+                        {uploadError}
+                      </div>
+                    )}
                   </div>
                 )}
 
