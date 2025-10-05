@@ -8,6 +8,7 @@ import Register from './pages/Register';
 import Upload from './pages/Upload';
 import Jobs from './pages/Jobs';
 import Results from './pages/Results';
+import ResumeMatcher from './pages/ResumeMatcher';
 
 function App() {
   return (
@@ -31,6 +32,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Jobs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/matcher"
+              element={
+                <ProtectedRoute>
+                  <ResumeMatcher />
                 </ProtectedRoute>
               }
             />
