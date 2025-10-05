@@ -8,28 +8,9 @@ const UploadCard = ({ onUploadSuccess }) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
 
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
-  };
+  // Drag & drop removed for a simpler, contained UI as requested
 
   const handleChange = (e) => {
     e.preventDefault();
@@ -101,22 +82,12 @@ const UploadCard = ({ onUploadSuccess }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="card-glow p-8 max-w-2xl mx-auto"
+      className="card-glow p-6 max-w-xl mx-auto"
     >
-      <h2 className="text-3xl font-bold mb-6 text-center">Upload Your Resume</h2>
-      <p className="text-center text-gray-400 mb-6">Upload your resume to analyze its match with job descriptions</p>
+      <h2 className="text-2xl font-bold mb-4 text-center">Upload Your Resume</h2>
+      <p className="text-center text-gray-400 mb-5">PDF and DOCX formats supported</p>
 
-      <div
-        className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all ${
-          dragActive
-            ? 'border-purple-500 bg-purple-500/10'
-            : 'border-gray-600 hover:border-purple-500/50'
-        }`}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-      >
+      <div className="relative rounded-xl p-6 text-center border border-purple-500/30 bg-slate-900/40">
         <input
           ref={fileInputRef}
           type="file"
@@ -127,40 +98,37 @@ const UploadCard = ({ onUploadSuccess }) => {
 
         {!file ? (
           <>
-            <FiUpload className="text-6xl text-purple-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">
-              Drag & Drop your resume here
-            </h3>
-            <p className="text-gray-400 mb-4">or</p>
+            <FiUpload className="text-5xl text-purple-400 mx-auto mb-3" />
             <button
               onClick={() => fileInputRef.current?.click()}
               className="btn-primary"
             >
               Browse Files
             </button>
-            <p className="text-sm text-gray-500 mt-4">
-              Supported formats: PDF, DOCX (Max 10MB)
+            <p className="text-sm text-gray-500 mt-3">
+              Max 10MB • PDF, DOCX
             </p>
           </>
         ) : (
-          <div className="flex items-center justify-between bg-dark-300 rounded-lg p-4">
+          <div className="flex items-center justify-between bg-dark-300/60 rounded-lg p-4">
             <div className="flex items-center space-x-3">
-              <FiFile className="text-3xl text-purple-400" />
+              <FiFile className="text-2xl text-purple-400" />
               <div className="text-left">
-                <p className="font-semibold">{file.name}</p>
-                <p className="text-sm text-gray-400">
+                <p className="font-semibold truncate max-w-[220px]">{file.name}</p>
+                <p className="text-xs text-gray-400">
                   {(file.size / 1024).toFixed(2)} KB
                 </p>
               </div>
             </div>
             {success ? (
-              <FiCheck className="text-3xl text-green-500" />
+              <FiCheck className="text-2xl text-green-500" />
             ) : (
               <button
                 onClick={removeFile}
                 className="text-red-400 hover:text-red-300"
+                aria-label="Remove selected file"
               >
-                <FiX className="text-2xl" />
+                <FiX className="text-xl" />
               </button>
             )}
           </div>
@@ -171,7 +139,7 @@ const UploadCard = ({ onUploadSuccess }) => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mt-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-300"
+          className="mt-3 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-300 text-sm"
         >
           {error}
         </motion.div>
@@ -181,9 +149,9 @@ const UploadCard = ({ onUploadSuccess }) => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mt-4 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-300"
+          className="mt-3 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-300 text-sm"
         >
-          Resume uploaded successfully!
+          ✓ Resume uploaded successfully!
         </motion.div>
       )}
 
@@ -191,7 +159,7 @@ const UploadCard = ({ onUploadSuccess }) => {
         <button
           onClick={handleUpload}
           disabled={uploading}
-          className="btn-primary w-full mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-primary w-full mt-4 disabled:opacity-50 disabled:cursor-not-allowed text-sm py-2 px-4"
         >
           {uploading ? 'Uploading...' : 'Upload Resume'}
         </button>
