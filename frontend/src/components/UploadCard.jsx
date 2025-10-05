@@ -61,15 +61,31 @@ const UploadCard = ({ onUploadSuccess }) => {
 
     setUploading(true);
     setError('');
+    
+    console.log('🔄 Starting upload for file:', file.name);
 
     try {
       const response = await resumeService.uploadResume(file);
+      console.log('✅ Upload successful:', response);
       setSuccess(true);
       setTimeout(() => {
         onUploadSuccess?.(response);
       }, 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Upload failed. Please try again.');
+      console.error('❌ Upload failed:', {
+        error: err,
+        response: err.response,
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
+      
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error?.message || 
+                          err.message || 
+                          'Upload failed. Please try again.';
+      
+      setError(`Upload failed: ${errorMessage}`);
     } finally {
       setUploading(false);
     }
