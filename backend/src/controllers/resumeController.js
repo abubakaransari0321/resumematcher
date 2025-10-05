@@ -1,50 +1,12 @@
 import Resume from '../models/Resume.js';
 import { extractSkills, extractCandidateInfo } from '../utils/extractSkills.js';
+import { parseFile } from '../utils/pdfParser.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-/**
- * Parse text from uploaded file
- */
-const parseFile = async (file) => {
-  try {
-    console.log('Parsing file:', file.path, 'Type:', file.mimetype);
-    if (!fs.existsSync(file.path)) {
-      throw new Error(`File not found: ${file.path}`);
-    }
-    const fileBuffer = fs.readFileSync(file.path);
-
-    if (file.mimetype === 'application/pdf') {
-      // Use pdf-parse to extract text from PDF
-      try {
-        const pdfParse = (await import('pdf-parse')).default;
-        const data = await pdfParse(fileBuffer);
-        return data.text;
-      } catch (pdfError) {
-        console.error('PDF parsing error:', pdfError);
-        // Fallback to treating as plain text
-        return fileBuffer.toString('utf-8');
-      }
-    } else if (
-      file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      file.mimetype === 'application/msword'
-    ) {
-      // For DOCX, we'll do simple text extraction
-      // In production, consider using mammoth or docx-parser
-      return fileBuffer.toString('utf-8');
-    } else {
-      // Fallback to plain text
-      return fileBuffer.toString('utf-8');
-    }
-  } catch (error) {
-    console.error('File parsing error:', error);
-    throw new Error('Failed to parse file');
-  }
-};
 
 /**
  * @desc    Upload and parse resume

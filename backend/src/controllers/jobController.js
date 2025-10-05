@@ -1,5 +1,6 @@
 import Job from '../models/Job.js';
 import { extractSkills } from '../utils/extractSkills.js';
+import { parseFile } from '../utils/pdfParser.js';
 import fs from 'fs';
 
 /**
@@ -67,41 +68,9 @@ export const createJob = async (req, res) => {
 
 /**
  * Parse text from uploaded job description file
+ * Now using the robust PDF parser utility
  */
-const parseJobFile = async (file) => {
-  try {
-    console.log('Parsing job file:', file.path, 'Type:', file.mimetype);
-    if (!fs.existsSync(file.path)) {
-      throw new Error(`File not found: ${file.path}`);
-    }
-    const fileBuffer = fs.readFileSync(file.path);
-
-    if (file.mimetype === 'application/pdf') {
-      // Use pdf-parse to extract text from PDF
-      try {
-        const pdfParse = (await import('pdf-parse')).default;
-        const data = await pdfParse(fileBuffer);
-        return data.text;
-      } catch (pdfError) {
-        console.error('PDF parsing error:', pdfError);
-        // Fallback to treating as plain text
-        return fileBuffer.toString('utf-8');
-      }
-    } else if (
-      file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-      file.mimetype === 'application/msword'
-    ) {
-      // For DOCX, we'll do simple text extraction
-      return fileBuffer.toString('utf-8');
-    } else {
-      // Fallback to plain text
-      return fileBuffer.toString('utf-8');
-    }
-  } catch (error) {
-    console.error('Job file parsing error:', error);
-    throw new Error('Failed to parse job description file');
-  }
-};
+const parseJobFile = parseFile;
 
 /**
  * @desc    Upload and parse job description file
