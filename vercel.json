@@ -4,6 +4,9 @@
   "installCommand": "cd frontend && npm install",
   "devCommand": "cd frontend && npm run dev",
   "cleanUrls": true,
+  "env": {
+    "VITE_API_BASE_URL": "https://resumematcher-esw3.onrender.com/api"
+  },
   "rewrites": [
     {
       "source": "/(.*)",
