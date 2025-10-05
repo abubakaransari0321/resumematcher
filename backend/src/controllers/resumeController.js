@@ -235,9 +235,131 @@ export const deleteResume = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Update resume skills
+ * @route   PUT /api/resumes/:id/skills
+ * @access  Private
+ */
+export const updateResumeSkills = async (req, res) => {
+  try {
+    const { skills } = req.body;
+
+    // Validation
+    if (!skills || !Array.isArray(skills)) {
+      return res.status(400).json({
+        error: {
+          code: 'INVALID_SKILLS',
+          message: 'Skills must be an array',
+        },
+      });
+    }
+
+    // Validate individual skills
+    const validatedSkills = skills
+      .map(skill => typeof skill === 'string' ? skill.trim() : '')
+      .filter(skill => skill.length > 0)
+      .filter((skill, index, arr) => arr.indexOf(skill) === index); // Remove duplicates
+
+    // Find and update resume
+    const resume = await Resume.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        user_id: req.user._id,
+      },
+      {
+        skills: validatedSkills,
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+
+    if (!resume) {
+      return res.status(404).json({
+        error: {
+          code: 'RESUME_NOT_FOUND',
+          message: 'Resume not found',
+        },
+      });
+    }
+
+    res.json({
+      id: resume._id,
+      name: resume.name,
+      skills: resume.skills,
+      updated_at: resume.updatedAt,
+    });
+  } catch (error) {
+    console.error('Update resume skills error:', error);
+    res.status(500).json({
+      error: {
+        code: 'SERVER_ERROR',
+        message: 'Error updating resume skills',
+      },
+    });
+  }
+};
+
+/**
+ * @desc    Re-extract skills from resume text
+ * @route   POST /api/resumes/:id/reextract-skills
+ * @access  Private
+ */
+export const reextractResumeSkills = async (req, res) => {
+  try {
+    const resume = await Resume.findOne({
+      _id: req.params.id,
+      user_id: req.user._id,
+    });
+
+    if (!resume) {
+      return res.status(404).json({
+        error: {
+          code: 'RESUME_NOT_FOUND',
+          message: 'Resume not found',
+        },
+      });
+    }
+
+    if (!resume.text) {
+      return res.status(400).json({
+        error: {
+          code: 'NO_TEXT_AVAILABLE',
+          message: 'No text available for skill extraction',
+        },
+      });
+    }
+
+    // Re-extract skills from stored text
+    const newSkills = extractSkills(resume.text);
+    
+    // Update resume with new skills
+    resume.skills = newSkills;
+    resume.updatedAt = new Date();
+    await resume.save();
+
+    res.json({
+      id: resume._id,
+      name: resume.name,
+      skills: resume.skills,
+      total_skills_extracted: newSkills.length,
+      updated_at: resume.updatedAt,
+    });
+  } catch (error) {
+    console.error('Re-extract resume skills error:', error);
+    res.status(500).json({
+      error: {
+        code: 'SERVER_ERROR',
+        message: 'Error re-extracting resume skills',
+      },
+    });
+  }
+};
+
 export default {
   uploadResume,
   getResumes,
   getResumeById,
   deleteResume,
+  updateResumeSkills,
+  reextractResumeSkills,
 };

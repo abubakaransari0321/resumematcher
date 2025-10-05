@@ -9,6 +9,8 @@ import {
   getJobById,
   updateJob,
   deleteJob,
+  updateJobSkills,
+  reextractJobSkills,
 } from '../controllers/jobController.js';
 import { protect } from '../middleware/auth.js';
 import { idempotency } from '../middleware/idempotency.js';
@@ -66,5 +68,7 @@ router.get('/', getJobs);
 router.get('/:id', getJobById);
 router.put('/:id', idempotency, updateJob);
 router.delete('/:id', deleteJob);
+router.put('/:id/skills', idempotency, updateJobSkills);
+router.post('/:id/reextract-skills', idempotency, reextractJobSkills);
 
 export default router;

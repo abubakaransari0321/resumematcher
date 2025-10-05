@@ -7,6 +7,8 @@ import {
   getResumes,
   getResumeById,
   deleteResume,
+  updateResumeSkills,
+  reextractResumeSkills,
 } from '../controllers/resumeController.js';
 import { protect } from '../middleware/auth.js';
 import { idempotency } from '../middleware/idempotency.js';
@@ -63,5 +65,7 @@ router.post('/', uploadLimiter, idempotency, upload.single('file'), uploadResume
 router.get('/', getResumes);
 router.get('/:id', getResumeById);
 router.delete('/:id', deleteResume);
+router.put('/:id/skills', idempotency, updateResumeSkills);
+router.post('/:id/reextract-skills', idempotency, reextractResumeSkills);
 
 export default router;

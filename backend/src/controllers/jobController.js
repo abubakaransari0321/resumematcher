@@ -332,6 +332,127 @@ export const deleteJob = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Update job skills
+ * @route   PUT /api/jobs/:id/skills
+ * @access  Private
+ */
+export const updateJobSkills = async (req, res) => {
+  try {
+    const { skills } = req.body;
+
+    // Validation
+    if (!skills || !Array.isArray(skills)) {
+      return res.status(400).json({
+        error: {
+          code: 'INVALID_SKILLS',
+          message: 'Skills must be an array',
+        },
+      });
+    }
+
+    // Validate individual skills
+    const validatedSkills = skills
+      .map(skill => typeof skill === 'string' ? skill.trim() : '')
+      .filter(skill => skill.length > 0)
+      .filter((skill, index, arr) => arr.indexOf(skill) === index); // Remove duplicates
+
+    // Find and update job
+    const job = await Job.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        user_id: req.user._id,
+      },
+      {
+        skills_required: validatedSkills,
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+
+    if (!job) {
+      return res.status(404).json({
+        error: {
+          code: 'JOB_NOT_FOUND',
+          message: 'Job not found',
+        },
+      });
+    }
+
+    res.json({
+      id: job._id,
+      title: job.title,
+      skills_required: job.skills_required,
+      updated_at: job.updatedAt,
+    });
+  } catch (error) {
+    console.error('Update job skills error:', error);
+    res.status(500).json({
+      error: {
+        code: 'SERVER_ERROR',
+        message: 'Error updating job skills',
+      },
+    });
+  }
+};
+
+/**
+ * @desc    Re-extract skills from job description
+ * @route   POST /api/jobs/:id/reextract-skills
+ * @access  Private
+ */
+export const reextractJobSkills = async (req, res) => {
+  try {
+    const job = await Job.findOne({
+      _id: req.params.id,
+      user_id: req.user._id,
+    });
+
+    if (!job) {
+      return res.status(404).json({
+        error: {
+          code: 'JOB_NOT_FOUND',
+          message: 'Job not found',
+        },
+      });
+    }
+
+    if (!job.description) {
+      return res.status(400).json({
+        error: {
+          code: 'NO_DESCRIPTION_AVAILABLE',
+          message: 'No description available for skill extraction',
+        },
+      });
+    }
+
+    // Re-extract skills from job description and title
+    const combinedText = (job.title || '') + ' ' + job.description;
+    const newSkills = extractSkills(combinedText);
+    
+    // Update job with new skills
+    job.skills_required = newSkills;
+    job.updatedAt = new Date();
+    await job.save();
+
+    res.json({
+      id: job._id,
+      title: job.title,
+      skills_required: job.skills_required,
+      total_skills_extracted: newSkills.length,
+      updated_at: job.updatedAt,
+    });
+  } catch (error) {
+    console.error('Re-extract job skills error:', error);
+    res.status(500).json({
+      error: {
+        code: 'SERVER_ERROR',
+        message: 'Error re-extracting job skills',
+      },
+    });
+  }
+};
+
 export default {
   createJob,
   uploadJobDescription,
@@ -339,4 +460,6 @@ export default {
   getJobById,
   updateJob,
   deleteJob,
+  updateJobSkills,
+  reextractJobSkills,
 };
