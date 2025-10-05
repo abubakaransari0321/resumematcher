@@ -61,24 +61,35 @@ const Results = () => {
           
           if (matchResponse.matches && matchResponse.matches.length > 0) {
             // Transform the API response to match our component expectations
-            const jobMatches = matchResponse.matches.map(match => ({
-              id: `${job.id}-${match.resume_id}`,
-              resume: {
-                id: match.resume_id,
-                name: match.name,
-                filename: `${match.name}.pdf`
-              },
-              job: {
-                id: job.id,
-                title: job.title,
-                description: job.description,
-                company: job.company,
-                location: job.location
-              },
-              matchScore: match.match_percent,
-              matchedSkills: match.matched_skills,
-              missingSkills: match.missing_skills
-            }));
+            console.log('Raw API match data:', matchResponse.matches);
+            
+            const jobMatches = matchResponse.matches.map(match => {
+              console.log('Processing match:', {
+                resume_id: match.resume_id,
+                match_percent: match.match_percent,
+                matched_skills: match.matched_skills,
+                missing_skills: match.missing_skills
+              });
+              
+              return {
+                id: `${job.id}-${match.resume_id}`,
+                resume: {
+                  id: match.resume_id,
+                  name: match.name,
+                  filename: `${match.name}.pdf`
+                },
+                job: {
+                  id: job.id,
+                  title: job.title,
+                  description: job.description,
+                  company: job.company,
+                  location: job.location
+                },
+                matchScore: match.match_percent,
+                matchedSkills: match.matched_skills || [],
+                missingSkills: match.missing_skills || []
+              };
+            });
             allMatches.push(...jobMatches);
           }
         } catch (matchError) {
@@ -105,31 +116,12 @@ const Results = () => {
         method: err.config?.method
       });
       
-      // Try to show demo data as fallback
-      console.log('Showing demo data as fallback...');
-      const demoMatches = [
-        {
-          id: 'demo-match-1',
-          resume: {
-            id: 'demo-resume-1',
-            name: 'Your Resume',
-            filename: 'resume.pdf'
-          },
-          job: {
-            id: 'demo-job-1',
-            title: 'Software Developer',
-            description: 'Full-stack development position...',
-            company: 'Tech Company',
-            location: 'Remote'
-          },
-          matchScore: 75,
-          matchedSkills: ['JavaScript', 'React', 'Node.js', 'CSS', 'HTML'],
-          missingSkills: ['TypeScript', 'Python', 'AWS']
-        }
-      ];
+      // Don't show demo data - instead show proper error
+      console.log('API failed, showing error instead of dummy data');
+      console.error('Full API error for debugging:', err);
       
-      setMatches(demoMatches);
-      setError(`Demo Mode: ${errorMessage}`);
+      setMatches([]);
+      setError(`API Error: ${errorMessage}. Please try refreshing the page or go back to upload a new resume.`);
       setLoading(false);
     }
   };
@@ -147,6 +139,14 @@ const Results = () => {
         const specificMatch = matchResponse.matches.find(match => match.resume_id === resume.id);
         
         if (specificMatch) {
+          console.log('Specific match found:', {
+            match_percent: specificMatch.match_percent,
+            matched_skills: specificMatch.matched_skills,
+            missing_skills: specificMatch.missing_skills,
+            total_resume_skills: specificMatch.total_resume_skills,
+            total_job_skills: specificMatch.total_job_skills
+          });
+          
           const singleMatch = {
             id: `${job.id}-${resume.id}`,
             resume: {
@@ -161,9 +161,9 @@ const Results = () => {
               company: job.company,
               location: job.location
             },
-            matchScore: specificMatch.match_percent,
-            matchedSkills: specificMatch.matched_skills,
-            missingSkills: specificMatch.missing_skills
+            matchScore: specificMatch.match_percent || 0,
+            matchedSkills: specificMatch.matched_skills || [],
+            missingSkills: specificMatch.missing_skills || []
           };
           
           console.log('Single match result:', singleMatch);
@@ -192,29 +192,12 @@ const Results = () => {
         method: error.config?.method
       });
       
-      // Show demo match for the specific resume/job
-      console.log('Creating demo match for stored data...');
-      const demoMatch = {
-        id: `demo-${resume.id}-${job.id}`,
-        resume: {
-          id: resume.id,
-          name: resume.name || 'Your Resume',
-          filename: `${resume.name || 'resume'}.pdf`
-        },
-        job: {
-          id: job.id,
-          title: job.title || 'Job Position',
-          description: job.description || 'Job description...',
-          company: job.company || 'Company',
-          location: job.location || 'Location'
-        },
-        matchScore: Math.floor(Math.random() * 40) + 60, // Random score 60-100%
-        matchedSkills: ['JavaScript', 'React', 'CSS', 'HTML', 'Node.js'],
-        missingSkills: ['TypeScript', 'Python', 'AWS', 'Docker']
-      };
+      // Don't show fake data - show error instead
+      console.log('Single match API failed, showing error');
+      console.error('Single match error details:', error);
       
-      setMatches([demoMatch]);
-      setError(`Demo Mode: Using sample data (${errorMessage})`);
+      setMatches([]);
+      setError(`Match API Error: ${errorMessage}. The backend may be starting up or there may be an authentication issue.`);
       setLoading(false);
     }
   };
@@ -262,42 +245,34 @@ const Results = () => {
 
       {error && (
         <div className="max-w-6xl mx-auto mb-8">
-          <div className={`p-6 border rounded-lg ${
-            error.startsWith('Demo Mode') 
-              ? 'bg-orange-500/20 border-orange-500 text-orange-300' 
-              : 'bg-red-500/20 border-red-500 text-red-300'
-          }`}>
-            <h3 className={`text-lg font-semibold mb-2 ${
-              error.startsWith('Demo Mode') ? 'text-orange-200' : 'text-red-200'
-            }`}>
-              {error.startsWith('Demo Mode') ? '⚠️ Demo Mode Active' : 'Error Loading Results'}
+          <div className="p-6 border rounded-lg bg-red-500/20 border-red-500 text-red-300">
+            <h3 className="text-lg font-semibold mb-2 text-red-200">
+              ❌ Error Loading Match Results
             </h3>
             <p className="mb-4">{error}</p>
-            {error.startsWith('Demo Mode') ? (
-              <div className="text-sm text-orange-400">
-                <p>Showing sample match data. The API may be temporarily unavailable.</p>
-              </div>
-            ) : (
-              <div className="text-sm text-red-400">
-                <p>Possible solutions:</p>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Make sure you're logged in</li>
-                  <li>Try uploading a resume and job description first</li>
-                  <li>Check your internet connection</li>
-                  <li>Refresh the page and try again</li>
-                </ul>
-              </div>
-            )}
-            <button
-              onClick={() => window.location.href = '/matcher'}
-              className={`mt-4 px-4 py-2 text-white rounded-lg transition-colors ${
-                error.startsWith('Demo Mode') 
-                  ? 'bg-orange-600 hover:bg-orange-700' 
-                  : 'bg-red-600 hover:bg-red-700'
-              }`}
-            >
-              Go back to Resume Matcher
-            </button>
+            <div className="text-sm text-red-400">
+              <p>Possible solutions:</p>
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Make sure you're logged in with a valid account</li>
+                <li>Try uploading a resume and job description first</li>
+                <li>Wait 30 seconds and refresh (backend may be starting)</li>
+                <li>Check browser console for detailed error logs</li>
+              </ul>
+            </div>
+            <div className="mt-4 flex space-x-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Refresh Page
+              </button>
+              <button
+                onClick={() => window.location.href = '/matcher'}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Back to Matcher
+              </button>
+            </div>
           </div>
         </div>
       )}
