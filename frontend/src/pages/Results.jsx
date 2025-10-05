@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import MatchResultCard from '../components/MatchResultCard';
-import { jobService } from '../api/jobService';
-import { resumeService } from '../api/resumeService';
+// Temporarily commented out for debugging routing
+// import MatchResultCard from '../components/MatchResultCard';
+// import { jobService } from '../api/jobService';
+// import { resumeService } from '../api/resumeService';
 
 const Results = () => {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadMatches();
-  }, []);
+  // Temporarily disabled for testing
+  // useEffect(() => {
+  //   loadMatches();
+  // }, []);
 
   const loadMatches = async () => {
     try {
@@ -187,17 +189,18 @@ const Results = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen pt-24 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mx-auto mb-4"></div>
-          <p className="text-xl text-white font-semibold mb-2">AI Match in Progress...</p>
-          <p className="text-gray-400">Analyzing resume-job compatibility</p>
-        </div>
-      </div>
-    );
-  }
+  // Simplified for debugging - skip loading state
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen pt-24 flex items-center justify-center">
+  //       <div className="text-center">
+  //         <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mx-auto mb-4"></div>
+  //         <p className="text-xl text-white font-semibold mb-2">AI Match in Progress...</p>
+  //         <p className="text-gray-400">Analyzing resume-job compatibility</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen pt-24 px-4 pb-12">
@@ -238,35 +241,28 @@ const Results = () => {
         </div>
       )}
 
-      {matches.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="max-w-2xl mx-auto text-center"
-        >
-          <div className="card-glow p-12">
-            <p className="text-xl text-gray-400 mb-4">
-              No match results yet
-            </p>
-            <p className="text-gray-500">
-              Upload a resume and add a job description to see the match analysis
-            </p>
-          </div>
-        </motion.div>
-      ) : (
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {matches.map((match, index) => (
-            <motion.div
-              key={match.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <MatchResultCard match={match} onRerun={handleRerunMatch} />
-            </motion.div>
-          ))}
+      {/* Simplified test content */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="max-w-2xl mx-auto text-center"
+      >
+        <div className="p-12 bg-slate-800/80 rounded-2xl border border-purple-500/20">
+          <h2 className="text-2xl font-bold mb-4 text-white">Results Page Test</h2>
+          <p className="text-xl text-gray-400 mb-4">
+            ✅ Routing is working! This is the Results page.
+          </p>
+          <p className="text-gray-500 mb-6">
+            The 404 error has been fixed. API integration will be restored once routing is confirmed.
+          </p>
+          <button
+            onClick={() => window.location.href = '/matcher'}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+          >
+            Back to Resume Matcher
+          </button>
         </div>
-      )}
+      </motion.div>
     </div>
   );
 };
