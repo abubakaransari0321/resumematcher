@@ -13,9 +13,9 @@ export const resumeService = {
     return response.data;
   },
 
-  getResumes: async (page = 1, limit = 10) => {
+  getResumes: async (limit = 100, offset = 0) => {
     const response = await axiosInstance.get('/resumes', {
-      params: { page, limit },
+      params: { limit, offset },
     });
     return response.data;
   },

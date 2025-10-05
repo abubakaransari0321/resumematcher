@@ -18,9 +18,9 @@ export const jobService = {
     return response.data;
   },
 
-  getJobs: async (page = 1, limit = 10) => {
+  getJobs: async (limit = 100, offset = 0) => {
     const response = await axiosInstance.get('/jobs', {
-      params: { page, limit },
+      params: { limit, offset },
     });
     return response.data;
   },

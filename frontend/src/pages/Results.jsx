@@ -18,24 +18,29 @@ const Results = () => {
       // First, check if we have a recent match from localStorage
       const lastMatch = localStorage.getItem('lastMatch');
       if (lastMatch) {
-        const matchData = JSON.parse(lastMatch);
-        console.log('Found stored match data:', matchData);
-        
-        // Check if it's recent (within last hour)
-        const isRecent = (Date.now() - matchData.timestamp) < (60 * 60 * 1000);
-        
-        if (isRecent && matchData.resume && matchData.job) {
-          console.log('Using recent match data for analysis...');
-          await performSingleMatch(matchData.resume, matchData.job);
-          return;
+        try {
+          const matchData = JSON.parse(lastMatch);
+          console.log('Found stored match data:', matchData);
+          
+          // Check if it's recent (within last hour)
+          const isRecent = (Date.now() - matchData.timestamp) < (60 * 60 * 1000);
+          
+          if (isRecent && matchData.resume && matchData.job) {
+            console.log('Using recent match data for analysis...');
+            await performSingleMatch(matchData.resume, matchData.job);
+            return;
+          }
+        } catch (parseError) {
+          console.error('Error parsing stored match data:', parseError);
+          localStorage.removeItem('lastMatch'); // Clear corrupted data
         }
       }
       
       // Fallback: Get all jobs and resumes for the user
       console.log('Loading all matches...');
       const [jobsResponse, resumesResponse] = await Promise.all([
-        jobService.getJobs(1, 100),
-        resumeService.getResumes(1, 100)
+        jobService.getJobs(100, 0),
+        resumeService.getResumes(100, 0)
       ]);
 
       const jobs = jobsResponse.items || [];
@@ -88,7 +93,19 @@ const Results = () => {
       setLoading(false);
     } catch (err) {
       console.error('Error loading matches:', err);
-      setError('Failed to load match results');
+      
+      // Show detailed error information
+      const errorMessage = err.response?.data?.error?.message || err.message || 'Unknown error';
+      const errorStatus = err.response?.status || 'No status';
+      
+      console.error('API Error Details:', {
+        message: errorMessage,
+        status: errorStatus,
+        url: err.config?.url,
+        method: err.config?.method
+      });
+      
+      setError(`API Error (${errorStatus}): ${errorMessage}`);
       setLoading(false);
     }
   };
@@ -139,7 +156,19 @@ const Results = () => {
       setLoading(false);
     } catch (error) {
       console.error('Error performing single match:', error);
-      setError('Failed to load match result');
+      
+      // Show detailed error information
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Unknown error';
+      const errorStatus = error.response?.status || 'No status';
+      
+      console.error('Single Match API Error Details:', {
+        message: errorMessage,
+        status: errorStatus,
+        url: error.config?.url,
+        method: error.config?.method
+      });
+      
+      setError(`Match API Error (${errorStatus}): ${errorMessage}`);
       setLoading(false);
     }
   };
@@ -186,8 +215,26 @@ const Results = () => {
       </motion.div>
 
       {error && (
-        <div className="max-w-6xl mx-auto mb-8 p-4 bg-red-500/20 border border-red-500 rounded-lg text-red-300">
-          {error}
+        <div className="max-w-6xl mx-auto mb-8">
+          <div className="p-6 bg-red-500/20 border border-red-500 rounded-lg text-red-300">
+            <h3 className="text-lg font-semibold mb-2 text-red-200">Error Loading Results</h3>
+            <p className="mb-4">{error}</p>
+            <div className="text-sm text-red-400">
+              <p>Possible solutions:</p>
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Make sure you're logged in</li>
+                <li>Try uploading a resume and job description first</li>
+                <li>Check your internet connection</li>
+                <li>Refresh the page and try again</li>
+              </ul>
+            </div>
+            <button
+              onClick={() => window.location.href = '/matcher'}
+              className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+            >
+              Go back to Resume Matcher
+            </button>
+          </div>
         </div>
       )}
 
