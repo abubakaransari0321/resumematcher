@@ -14,7 +14,7 @@ services:
       - key: MONGODB_URI
         value: mongodb+srv://user2:bakar123@cluster0.oxt2l.mongodb.net/resumerag?retryWrites=true&w=majority&appName=Cluster0
       - key: JWT_SECRET
-        value: your_super_secret_jwt_key_change_this_in_production
+        value: resumeRAG_super_secret_jwt_key_2025_production_ready
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: MAX_FILE_SIZE

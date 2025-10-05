@@ -57,6 +57,13 @@ export const protect = async (req, res, next) => {
  * Generate JWT token
  */
 export const generateToken = (id) => {
+  console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+  console.log('JWT_EXPIRES_IN:', process.env.JWT_EXPIRES_IN);
+  
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not set');
+  }
+  
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
