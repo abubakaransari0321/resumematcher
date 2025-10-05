@@ -9,48 +9,148 @@ const calculateMatch = (resumeSkills, jobSkills) => {
   console.log('Resume skills (', resumeSkills.length, '):', resumeSkills);
   console.log('Job skills (', jobSkills.length, '):', jobSkills);
   
-  // Normalize skills for case-insensitive comparison
-  const resumeSkillsLower = resumeSkills.map(s => s.toLowerCase());
-  const jobSkillsLower = jobSkills.map(s => s.toLowerCase());
+  // Input validation
+  if (!resumeSkills || !jobSkills || !Array.isArray(resumeSkills) || !Array.isArray(jobSkills)) {
+    console.log('Invalid input: skills arrays are not valid');
+    return {
+      matchPercent: 0,
+      missingSkills: jobSkills || [],
+      matchedSkills: [],
+      overlapCount: 0,
+    };
+  }
+  
+  // Handle empty arrays
+  if (jobSkills.length === 0) {
+    console.log('No job skills to match against');
+    return {
+      matchPercent: 0,
+      missingSkills: [],
+      matchedSkills: [],
+      overlapCount: 0,
+    };
+  }
+  
+  // Normalize and clean skills
+  const resumeSkillsNormalized = resumeSkills
+    .filter(skill => skill && typeof skill === 'string')
+    .map(skill => skill.trim().toLowerCase())
+    .filter(skill => skill.length > 0);
+    
+  const jobSkillsNormalized = jobSkills
+    .filter(skill => skill && typeof skill === 'string')
+    .map(skill => skill.trim().toLowerCase())
+    .filter(skill => skill.length > 0);
 
-  console.log('Resume skills (normalized):', resumeSkillsLower);
-  console.log('Job skills (normalized):', jobSkillsLower);
+  console.log('Resume skills (normalized):', resumeSkillsNormalized);
+  console.log('Job skills (normalized):', jobSkillsNormalized);
 
-  // Find overlapping skills
-  const overlap = resumeSkillsLower.filter(skill => 
-    jobSkillsLower.includes(skill)
+  // Find exact matches
+  const exactMatches = new Set();
+  const fuzzyMatches = new Set();
+  
+  // Check for exact matches first
+  jobSkillsNormalized.forEach((jobSkill, jobIndex) => {
+    resumeSkillsNormalized.forEach((resumeSkill, resumeIndex) => {
+      if (jobSkill === resumeSkill) {
+        exactMatches.add(jobIndex);
+        return;
+      }
+    });
+  });
+  
+  // Check for fuzzy matches (skill variations)
+  jobSkillsNormalized.forEach((jobSkill, jobIndex) => {
+    if (exactMatches.has(jobIndex)) return; // Skip if already exactly matched
+    
+    resumeSkillsNormalized.forEach((resumeSkill) => {
+      if (areSkillsSimilar(jobSkill, resumeSkill)) {
+        fuzzyMatches.add(jobIndex);
+        return;
+      }
+    });
+  });
+  
+  const totalMatches = exactMatches.size + fuzzyMatches.size;
+  const matchPercent = Math.round((totalMatches / jobSkills.length) * 100);
+  
+  console.log('Exact matches:', exactMatches.size);
+  console.log('Fuzzy matches:', fuzzyMatches.size);
+  console.log('Total matches:', totalMatches, '/', jobSkills.length, '=', matchPercent + '%');
+
+  // Find missing skills
+  const missingSkills = jobSkills.filter((skill, index) => 
+    !exactMatches.has(index) && !fuzzyMatches.has(index)
   );
 
-  console.log('Overlapping skills:', overlap);
-
-  // Calculate match percentage
-  const matchPercent = jobSkills.length > 0 
-    ? Math.round((overlap.length / jobSkills.length) * 100)
-    : 0;
-
-  console.log('Match calculation:', overlap.length, '/', jobSkills.length, '=', matchPercent + '%');
-
-  // Find missing skills (case-sensitive from original job skills)
-  const missingSkills = jobSkills.filter(skill => 
-    !resumeSkillsLower.includes(skill.toLowerCase())
-  );
-
-  // Find matched skills (from original resume skills for display)
-  const matchedSkills = resumeSkills.filter(skill =>
-    jobSkillsLower.includes(skill.toLowerCase())
-  );
+  // Find matched skills from resume
+  const matchedSkills = [];
+  exactMatches.forEach(index => {
+    const jobSkill = jobSkills[index];
+    const matchingResumeSkill = resumeSkills.find(skill => 
+      skill.toLowerCase().trim() === jobSkill.toLowerCase().trim()
+    );
+    if (matchingResumeSkill) {
+      matchedSkills.push(matchingResumeSkill);
+    }
+  });
+  
+  fuzzyMatches.forEach(index => {
+    const jobSkill = jobSkills[index];
+    const matchingResumeSkill = resumeSkills.find(skill => 
+      areSkillsSimilar(skill.toLowerCase().trim(), jobSkill.toLowerCase().trim())
+    );
+    if (matchingResumeSkill && !matchedSkills.includes(matchingResumeSkill)) {
+      matchedSkills.push(matchingResumeSkill);
+    }
+  });
 
   const result = {
     matchPercent,
     missingSkills,
     matchedSkills,
-    overlapCount: overlap.length,
+    overlapCount: totalMatches,
   };
   
   console.log('Final match result:', result);
   console.log('=== END MATCH CALCULATION ===\n');
   
   return result;
+};
+
+/**
+ * Check if two skills are similar (handle common variations)
+ */
+const areSkillsSimilar = (skill1, skill2) => {
+  // Handle common variations
+  const variations = {
+    'javascript': ['js', 'ecmascript'],
+    'typescript': ['ts'],
+    'nodejs': ['node.js', 'node js'],
+    'reactjs': ['react', 'react.js'],
+    'vuejs': ['vue.js', 'vue js'],
+    'css3': ['css'],
+    'html5': ['html'],
+    'mongodb': ['mongo'],
+    'postgresql': ['postgres'],
+    'cpp': ['c++'],
+    'csharp': ['c#'],
+  };
+  
+  // Check if skills are in the same variation group
+  for (const [base, vars] of Object.entries(variations)) {
+    const group = [base, ...vars];
+    if (group.includes(skill1) && group.includes(skill2)) {
+      return true;
+    }
+  }
+  
+  // Check for partial matches (e.g., "react native" contains "react")
+  if (skill1.includes(skill2) || skill2.includes(skill1)) {
+    return true;
+  }
+  
+  return false;
 };
 
 /**

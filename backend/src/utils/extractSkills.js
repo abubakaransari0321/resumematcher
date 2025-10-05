@@ -61,27 +61,89 @@ export function extractSkills(text) {
   console.log('Text length:', text.length);
   console.log('First 200 chars:', text.substring(0, 200));
 
-  const lowerText = text.toLowerCase();
-  const foundSkills = [];
+  // Preprocess text: normalize whitespace, lowercase, handle common variations
+  const preprocessedText = text
+    .replace(/\s+/g, ' ')  // Normalize whitespace
+    .toLowerCase()
+    .trim();
+    
+  console.log('Preprocessed text length:', preprocessedText.length);
+  console.log('First 200 chars (preprocessed):', preprocessedText.substring(0, 200));
+  
+  const foundSkills = new Set(); // Use Set for automatic deduplication
 
   COMMON_SKILLS.forEach(skill => {
     const skillLower = skill.toLowerCase();
     
-    // Use word boundary regex for more accurate matching
-    const regex = new RegExp(`\\b${skillLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    // Create multiple regex patterns for better matching
+    const patterns = [
+      // Exact word boundary match (primary)
+      new RegExp(`\\b${escapeRegex(skillLower)}\\b`, 'gi'),
+      // Handle variations with dots (e.g., "Node.js" vs "Node js" vs "Nodejs")
+      new RegExp(`\\b${escapeRegex(skillLower.replace(/\./g, '\\s*\.?\\s*'))}\\b`, 'gi'),
+      // Handle hyphenated versions (e.g., "C++" vs "C plus plus")
+      new RegExp(`\\b${escapeRegex(skillLower.replace(/[+#]/g, '\\s*[+#]*\\s*'))}\\b`, 'gi')
+    ];
     
-    if (regex.test(lowerText)) {
-      foundSkills.push(skill);
-    }
+    // Try each pattern
+    patterns.forEach(regex => {
+      if (regex.test(preprocessedText)) {
+        foundSkills.add(skill);
+      }
+    });
+    
+    // Special handling for common variations
+    handleSkillVariations(preprocessedText, skill, foundSkills);
   });
 
-  // Remove duplicates and return
-  const uniqueSkills = [...new Set(foundSkills)];
+  const uniqueSkills = Array.from(foundSkills);
   console.log('Extracted skills (', uniqueSkills.length, '):', uniqueSkills);
   console.log('=== END SKILL EXTRACTION ===\n');
   
   return uniqueSkills;
 }
+
+/**
+ * Escape special regex characters
+ */
+const escapeRegex = (string) => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+/**
+ * Handle common skill variations and synonyms
+ */
+const handleSkillVariations = (text, skill, foundSkills) => {
+  const skillLower = skill.toLowerCase();
+  
+  // Handle common synonyms and variations
+  const variations = {
+    'javascript': ['js', 'ecmascript', 'es6', 'es2015', 'es2020'],
+    'typescript': ['ts'],
+    'css': ['css3', 'cascading style sheets'],
+    'html': ['html5', 'hypertext markup language'],
+    'node.js': ['nodejs', 'node js'],
+    'react': ['reactjs', 'react.js'],
+    'vue.js': ['vuejs', 'vue js'],
+    'angular': ['angularjs'],
+    'mongodb': ['mongo'],
+    'postgresql': ['postgres'],
+    'c++': ['cpp', 'c plus plus'],
+    'c#': ['csharp', 'c sharp'],
+    'rest api': ['restful api', 'rest', 'restful'],
+    'machine learning': ['ml', 'artificial intelligence', 'ai'],
+    'deep learning': ['dl', 'neural networks']
+  };
+  
+  if (variations[skillLower]) {
+    variations[skillLower].forEach(variation => {
+      const variationRegex = new RegExp(`\\b${escapeRegex(variation)}\\b`, 'gi');
+      if (variationRegex.test(text)) {
+        foundSkills.add(skill);
+      }
+    });
+  }
+};
 
 /**
  * Extract candidate information from resume text

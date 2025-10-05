@@ -6,6 +6,25 @@ import fs from 'fs';
  */
 
 /**
+ * Clean extracted text to remove symbols, normalize whitespace, and fix common issues
+ */
+const cleanExtractedText = (text) => {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+  
+  return text
+    // Remove PDF encoding artifacts and control characters
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, ' ')
+    // Remove excessive symbols and special characters but keep basic punctuation
+    .replace(/[^\w\s.,;:()\-+#@/\\]/g, ' ')
+    // Normalize multiple whitespace to single space
+    .replace(/\s+/g, ' ')
+    // Remove leading/trailing whitespace
+    .trim();
+};
+
+/**
  * Method 1: Try using pdf2json (already in package.json)
  */
 const tryPdf2Json = async (buffer) => {
@@ -143,8 +162,10 @@ export const parsePDF = async (filePath) => {
         const result = await method.func(buffer);
         
         if (result && result.trim().length > 0) {
-          console.log(`Successfully parsed PDF using ${method.name}, extracted ${result.length} characters`);
-          return result;
+          // Clean the extracted text
+          const cleanedText = cleanExtractedText(result);
+          console.log(`Successfully parsed PDF using ${method.name}, extracted ${cleanedText.length} characters`);
+          return cleanedText;
         }
       } catch (methodError) {
         console.log(`${method.name} failed:`, methodError.message);
@@ -171,7 +192,8 @@ export const parseFile = async (file) => {
     }
 
     if (file.mimetype === 'application/pdf') {
-      return await parsePDF(file.path);
+      const pdfText = await parsePDF(file.path);
+      return cleanExtractedText(pdfText);
     } else if (
       file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
       file.mimetype === 'application/msword'
@@ -179,11 +201,13 @@ export const parseFile = async (file) => {
       // For DOCX/DOC, read as text (basic extraction)
       // In production, you might want to use mammoth or docx-parser
       const buffer = fs.readFileSync(file.path);
-      return buffer.toString('utf-8');
+      const rawText = buffer.toString('utf-8');
+      return cleanExtractedText(rawText);
     } else {
       // Plain text or other formats
       const buffer = fs.readFileSync(file.path);
-      return buffer.toString('utf-8');
+      const rawText = buffer.toString('utf-8');
+      return cleanExtractedText(rawText);
     }
   } catch (error) {
     console.error('File parsing error:', error);
