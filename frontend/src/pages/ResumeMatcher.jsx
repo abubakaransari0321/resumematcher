@@ -10,7 +10,7 @@ import {
   FiArrowRight,
   FiStar
 } from 'react-icons/fi';
-// Removed UploadCard import - now using inline upload interface
+import { resumeService } from '../api/resumeService';
 import JobDescriptionCard from '../components/JobDescriptionCard';
 import MatchResultCard from '../components/MatchResultCard';
 
@@ -56,18 +56,33 @@ const ResumeMatcher = () => {
     setUploadError('');
     
     try {
-      const { resumeService } = await import('../api/resumeService');
       const response = await resumeService.uploadResume(selectedFile);
       console.log('✅ Resume uploaded:', response);
       setResumeData(response);
       setResumeUploaded(true);
       setCurrentStep(2);
     } catch (error) {
-      console.error('❌ Upload failed:', error);
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error?.message || 
-                          error.message || 
-                          'Upload failed. Please try again.';
+      console.error('❌ Upload failed - Full error details:', {
+        error: error,
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data,
+        config: error.config
+      });
+      
+      let errorMessage = 'Upload failed. Please try again.';
+      
+      if (error.message === 'Network Error') {
+        errorMessage = 'Network Error: Backend server may be starting up. Please wait 30 seconds and try again.';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error?.message) {
+        errorMessage = error.response.data.error.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setUploadError(`Upload failed: ${errorMessage}`);
     } finally {
       setUploading(false);
