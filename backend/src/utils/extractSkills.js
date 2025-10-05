@@ -53,8 +53,13 @@ const COMMON_SKILLS = [
  */
 export function extractSkills(text) {
   if (!text || typeof text !== 'string') {
+    console.log('extractSkills: Invalid text input');
     return [];
   }
+
+  console.log('\n=== SKILL EXTRACTION DEBUG ===');
+  console.log('Text length:', text.length);
+  console.log('First 200 chars:', text.substring(0, 200));
 
   const lowerText = text.toLowerCase();
   const foundSkills = [];
@@ -71,7 +76,11 @@ export function extractSkills(text) {
   });
 
   // Remove duplicates and return
-  return [...new Set(foundSkills)];
+  const uniqueSkills = [...new Set(foundSkills)];
+  console.log('Extracted skills (', uniqueSkills.length, '):', uniqueSkills);
+  console.log('=== END SKILL EXTRACTION ===\n');
+  
+  return uniqueSkills;
 }
 
 /**

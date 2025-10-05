@@ -35,58 +35,20 @@ const ResumeMatcher = () => {
     setJobCreated(true);
     setCurrentStep(3);
     
-    // Now perform the actual matching
-    if (resumeData && response) {
-      await performMatching(resumeData, response);
-    }
-  };
-  
-  const performMatching = async (resume, job) => {
-    setLoading(true);
-    try {
-      console.log('🔄 Starting match analysis...');
-      
-      // Call the actual matching API endpoint
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/jobs/${job.id}/match`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          resumeId: resume.id
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to perform matching');
-      }
-      
-      const matchData = await response.json();
-      console.log('✅ Match result:', matchData);
-      
-      setMatchResult({
-        resume: resume,
-        job: job,
-        matchScore: matchData.matchScore || 0,
-        matchedSkills: matchData.matchedSkills || [],
-        missingSkills: matchData.missingSkills || []
-      });
-      
-    } catch (error) {
-      console.error('❌ Matching failed:', error);
-      // Fallback to demo data if API fails
-      setMatchResult({
-        resume: resume,
-        job: job,
-        matchScore: 75,
-        matchedSkills: ['JavaScript', 'React', 'CSS', 'HTML'],
-        missingSkills: ['TypeScript', 'Node.js'],
-        error: 'Using demo data - API matching temporarily unavailable'
-      });
-    } finally {
-      setLoading(false);
-    }
+    // Store match data in localStorage for Results page
+    const matchData = {
+      resume: resumeData,
+      job: response,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('lastMatch', JSON.stringify(matchData));
+    
+    // Set completion flag
+    setMatchResult({
+      resume: resumeData,
+      job: response,
+      completed: true
+    });
   };
 
   const containerVariants = {
@@ -373,65 +335,32 @@ const ResumeMatcher = () => {
               </div>
 
               <div className="flex-grow flex flex-col justify-center">
-                {/* Loading State */}
-                {currentStep === 3 && loading && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="border border-purple-500/30 rounded-xl p-6 text-center"
-                  >
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-500/10 rounded-full mb-4 animate-pulse">
-                      <FiZap className="text-2xl text-purple-400 animate-pulse" />
-                    </div>
-                    <h4 className="text-lg font-semibold mb-2 text-white">Analyzing...</h4>
-                    <p className="text-gray-400 text-xs">AI comparing your resume</p>
-                    <div className="mt-4 flex justify-center">
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-400 border-t-transparent"></div>
-                    </div>
-                  </motion.div>
-                )}
-                
-                {/* Compact Results */}
-                {currentStep === 3 && matchResult && !loading && (
+                {/* Completion State - No Demo Results */}
+                {currentStep === 3 && matchResult && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="border border-purple-500/30 rounded-xl p-4"
+                    className="border border-green-500/30 rounded-xl p-6 text-center"
                   >
-                    {/* Compact Match Score Display */}
-                    <div className="text-center mb-4">
-                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-600/20 mb-2">
-                        <span className="text-2xl font-bold text-purple-300">{matchResult.matchScore}%</span>
-                      </div>
-                      <p className="text-sm text-gray-400">Match Score</p>
+                    {/* Success Icon */}
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/10 rounded-full mb-4">
+                      <FiCheck className="text-3xl text-green-400" />
                     </div>
                     
-                    {/* Quick Stats */}
-                    <div className="grid grid-cols-2 gap-2 mb-4 text-center">
-                      <div className="bg-green-500/10 rounded-lg p-2">
-                        <div className="text-green-300 font-semibold text-sm">{matchResult.matchedSkills?.length || 0}</div>
-                        <div className="text-green-400 text-xs">Matched</div>
-                      </div>
-                      <div className="bg-orange-500/10 rounded-lg p-2">
-                        <div className="text-orange-300 font-semibold text-sm">{matchResult.missingSkills?.length || 0}</div>
-                        <div className="text-orange-400 text-xs">Missing</div>
-                      </div>
-                    </div>
+                    <h4 className="text-xl font-semibold mb-2 text-white">Analysis Complete!</h4>
+                    <p className="text-gray-400 text-sm mb-6">
+                      Your resume and job description have been processed. View detailed match results and recommendations.
+                    </p>
                     
-                    {/* View Detailed Results Button */}
+                    {/* View Results Button */}
                     <button
                       onClick={() => window.location.href = '/results'}
-                      className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 text-sm flex items-center justify-center space-x-2"
+                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
                     >
-                      <span>View Detailed Results</span>
-                      <FiArrowRight className="text-sm" />
+                      <FiZap className="text-lg" />
+                      <span>View Match Results</span>
+                      <FiArrowRight className="text-lg" />
                     </button>
-                    
-                    {matchResult.error && (
-                      <div className="mt-3 p-2 bg-orange-500/20 border border-orange-500/30 rounded-lg text-orange-300 text-xs">
-                        <p>{matchResult.error}</p>
-                      </div>
-                    )}
                   </motion.div>
                 )}
 

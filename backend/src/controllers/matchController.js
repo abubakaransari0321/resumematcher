@@ -5,19 +5,30 @@ import Resume from '../models/Resume.js';
  * Calculate match between resume skills and job requirements
  */
 const calculateMatch = (resumeSkills, jobSkills) => {
+  console.log('\n=== MATCH CALCULATION DEBUG ===');
+  console.log('Resume skills (', resumeSkills.length, '):', resumeSkills);
+  console.log('Job skills (', jobSkills.length, '):', jobSkills);
+  
   // Normalize skills for case-insensitive comparison
   const resumeSkillsLower = resumeSkills.map(s => s.toLowerCase());
   const jobSkillsLower = jobSkills.map(s => s.toLowerCase());
+
+  console.log('Resume skills (normalized):', resumeSkillsLower);
+  console.log('Job skills (normalized):', jobSkillsLower);
 
   // Find overlapping skills
   const overlap = resumeSkillsLower.filter(skill => 
     jobSkillsLower.includes(skill)
   );
 
+  console.log('Overlapping skills:', overlap);
+
   // Calculate match percentage
   const matchPercent = jobSkills.length > 0 
     ? Math.round((overlap.length / jobSkills.length) * 100)
     : 0;
+
+  console.log('Match calculation:', overlap.length, '/', jobSkills.length, '=', matchPercent + '%');
 
   // Find missing skills (case-sensitive from original job skills)
   const missingSkills = jobSkills.filter(skill => 
@@ -29,12 +40,17 @@ const calculateMatch = (resumeSkills, jobSkills) => {
     jobSkillsLower.includes(skill.toLowerCase())
   );
 
-  return {
+  const result = {
     matchPercent,
     missingSkills,
     matchedSkills,
     overlapCount: overlap.length,
   };
+  
+  console.log('Final match result:', result);
+  console.log('=== END MATCH CALCULATION ===\n');
+  
+  return result;
 };
 
 /**

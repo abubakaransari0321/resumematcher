@@ -15,7 +15,24 @@ const Results = () => {
 
   const loadMatches = async () => {
     try {
-      // Get all jobs and resumes for the user
+      // First, check if we have a recent match from localStorage
+      const lastMatch = localStorage.getItem('lastMatch');
+      if (lastMatch) {
+        const matchData = JSON.parse(lastMatch);
+        console.log('Found stored match data:', matchData);
+        
+        // Check if it's recent (within last hour)
+        const isRecent = (Date.now() - matchData.timestamp) < (60 * 60 * 1000);
+        
+        if (isRecent && matchData.resume && matchData.job) {
+          console.log('Using recent match data for analysis...');
+          await performSingleMatch(matchData.resume, matchData.job);
+          return;
+        }
+      }
+      
+      // Fallback: Get all jobs and resumes for the user
+      console.log('Loading all matches...');
       const [jobsResponse, resumesResponse] = await Promise.all([
         jobService.getJobs(1, 100),
         resumeService.getResumes(1, 100)
@@ -35,6 +52,8 @@ const Results = () => {
       for (const job of jobs) {
         try {
           const matchResponse = await jobService.matchResumes(job.id);
+          console.log(`Match response for job ${job.title}:`, matchResponse);
+          
           if (matchResponse.matches && matchResponse.matches.length > 0) {
             // Transform the API response to match our component expectations
             const jobMatches = matchResponse.matches.map(match => ({
@@ -64,11 +83,63 @@ const Results = () => {
 
       // Sort by match score descending
       allMatches.sort((a, b) => b.matchScore - a.matchScore);
+      console.log('Final matches:', allMatches);
       setMatches(allMatches);
       setLoading(false);
     } catch (err) {
       console.error('Error loading matches:', err);
       setError('Failed to load match results');
+      setLoading(false);
+    }
+  };
+  
+  const performSingleMatch = async (resume, job) => {
+    try {
+      console.log('Performing single match for:', { resume: resume.name, job: job.title });
+      
+      // Call the match API for this specific job
+      const matchResponse = await jobService.matchResumes(job.id);
+      console.log('Single match response:', matchResponse);
+      
+      if (matchResponse.matches && matchResponse.matches.length > 0) {
+        // Find the match for our specific resume
+        const specificMatch = matchResponse.matches.find(match => match.resume_id === resume.id);
+        
+        if (specificMatch) {
+          const singleMatch = {
+            id: `${job.id}-${resume.id}`,
+            resume: {
+              id: resume.id,
+              name: resume.name,
+              filename: `${resume.name}.pdf`
+            },
+            job: {
+              id: job.id,
+              title: job.title,
+              description: job.description,
+              company: job.company,
+              location: job.location
+            },
+            matchScore: specificMatch.match_percent,
+            matchedSkills: specificMatch.matched_skills,
+            missingSkills: specificMatch.missing_skills
+          };
+          
+          console.log('Single match result:', singleMatch);
+          setMatches([singleMatch]);
+        } else {
+          console.log('No match found for resume', resume.id);
+          setMatches([]);
+        }
+      } else {
+        console.log('No matches returned from API');
+        setMatches([]);
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error performing single match:', error);
+      setError('Failed to load match result');
       setLoading(false);
     }
   };
