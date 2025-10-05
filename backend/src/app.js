@@ -7,6 +7,30 @@ import { apiLimiter } from './middleware/rateLimit.js';
 // Load environment variables
 dotenv.config();
 
+// Fallback environment variables for production
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'resumeRAG_super_secret_jwt_key_2025_production_ready';
+}
+if (!process.env.JWT_EXPIRES_IN) {
+  process.env.JWT_EXPIRES_IN = '7d';
+}
+if (!process.env.CORS_ORIGIN) {
+  process.env.CORS_ORIGIN = '*';
+}
+if (!process.env.MAX_FILE_SIZE) {
+  process.env.MAX_FILE_SIZE = '5242880';
+}
+if (!process.env.UPLOAD_DIR) {
+  process.env.UPLOAD_DIR = './uploads';
+}
+
+console.log('🔧 Environment Variables Set:', {
+  JWT_SECRET: !!process.env.JWT_SECRET,
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT
+});
+
 // Import routes
 import authRoutes from './routes/auth.js';
 import resumeRoutes from './routes/resumes.js';
@@ -18,6 +42,9 @@ connectDB();
 
 // Initialize Express app
 const app = express();
+
+// Trust proxy for Render deployment (fixes rate limiting)
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(cors({
